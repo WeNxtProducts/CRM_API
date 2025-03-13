@@ -27,7 +27,6 @@ public class ActivityModel {
     @Column(name = "ACTIVITY_TYPE")
     private String activityType; // "APPOINTMENT" or "EVENT"
 
-    
     @Size(max = 255, message = "Activity subject must be at most 255 characters")
     @Column(name = "ACTIVITY_SUBJECT", length = 255)
     private String activitySubject;
@@ -36,24 +35,23 @@ public class ActivityModel {
     @Column(name = "ACTIVITY_DESCRIPTION")
     private String activityDescription;
 
-    @NotNull(message = "Activity date is required")
-    @FutureOrPresent(message = "Activity date must be in the present or future")
     @Temporal(TemporalType.TIMESTAMP)
-    @Column(name = "ACTIVITY_DATE")
-    private Date activityDate;
+    @Column(name = "ACTIVITY_START_DATE")
+    private Date activityStartDate;
+    
+    @Temporal(TemporalType.DATE)
+    @Column(name = "ACTIVITY_END_DATE")
+    private Date activityEndDate;
 
-    @Column(name = "ACTIVITY_DURATION", columnDefinition = "INT DEFAULT 30")
-    private Integer activityDuration; // Duration in minutes
+    @Column(name = "ACTIVITY_START_TIME")
+    private Time activityStartTime;
+
+    @Column(name = "ACTIVITY_END_TIME")
+    private Time activityEndTime;
 
     @Column(name = "ACTIVITY_STATUS")
-    private String activityStatus;
-
-    @Column(name = "LOGGED_TIME", length = 20)
-    private String loggedTime;
-
-    @Column(name = "ORIGINAL_ESTIMATE", length = 20)
-    private String originalEstimate;
-
+    private String activityStatus="Pending";
+    
     @Column(name = "PROBABILITY_PERCENTAGE")
     private Integer probabilityPercentage;
 
@@ -71,29 +69,9 @@ public class ActivityModel {
     @Temporal(TemporalType.TIMESTAMP)
     @Column(name = "ACTIVITY_UPDATED_DATE", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP")
     private Date activityUpdatedDate;
-
-    @Transient
-    private String durationBetweenLeadAndLogTime;
-
-    // Event-specific fields
-    @Column(name = "EVENT_START_TIME")
-    private Time eventStartTime;
-
-    @Column(name = "EVENT_END_TIME")
-    private Time eventEndTime;
-
-    @Temporal(TemporalType.DATE)
-    @Column(name = "EVENT_END_DATE")
-    private Date eventEndDate;
-
-    @Column(name = "EVENT_LOCATION")
-    private String eventLocation;
-
-    @Column(name = "EVENT_ORGANIZER")
-    private String eventOrganizer;
-
-    @Column(name = "EVENT_PRIORITY")
-    private String eventPriority;
+  
+    @Column(name = "ACTIVITY_PRIORITY")
+    private String activityPriority;
 
     @Column(name = "REMINDER_SENT")
     private boolean reminderSent = true;
@@ -101,196 +79,184 @@ public class ActivityModel {
     // Default constructor
     public ActivityModel() {}
 
-    // Getters and Setters for all fields
-    public Integer getActivitySeqNo() {
-        return activitySeqNo;
-    }
+	public ActivityModel(Integer activitySeqNo,
+			@Size(max = 50, message = "Activity reference ID must be at most 50 characters") String activityRefId,
+			EnquiryModel enquiry,
+			@NotBlank(message = "Activity type is required") @Size(max = 50, message = "Activity type must be at most 50 characters") String activityType,
+			@Size(max = 255, message = "Activity subject must be at most 255 characters") String activitySubject,
+			String activityDescription, Date activityStartDate, Date activityEndDate, Time activityStartTime,
+			Time activityEndTime, String activityStatus, Integer probabilityPercentage, String activityCreatedBy,
+			Date activityCreatedDate,
+			@Size(max = 50, message = "Updated by must be at most 50 characters") String activityUpdatedBy,
+			Date activityUpdatedDate, String activityPriority, boolean reminderSent) {
+		super();
+		this.activitySeqNo = activitySeqNo;
+		this.activityRefId = activityRefId;
+		this.enquiry = enquiry;
+		this.activityType = activityType;
+		this.activitySubject = activitySubject;
+		this.activityDescription = activityDescription;
+		this.activityStartDate = activityStartDate;
+		this.activityEndDate = activityEndDate;
+		this.activityStartTime = activityStartTime;
+		this.activityEndTime = activityEndTime;
+		this.activityStatus = activityStatus;
+		this.probabilityPercentage = probabilityPercentage;
+		this.activityCreatedBy = activityCreatedBy;
+		this.activityCreatedDate = activityCreatedDate;
+		this.activityUpdatedBy = activityUpdatedBy;
+		this.activityUpdatedDate = activityUpdatedDate;
+		this.activityPriority = activityPriority;
+		this.reminderSent = reminderSent;
+	}
 
-    public void setActivitySeqNo(Integer activitySeqNo) {
-        this.activitySeqNo = activitySeqNo;
-    }
 
-    public String getActivityRefId() {
-        return activityRefId;
-    }
 
-    public void setActivityRefId(String activityRefId) {
-        this.activityRefId = activityRefId;
-    }
+	public Integer getActivitySeqNo() {
+		return activitySeqNo;
+	}
 
-    public EnquiryModel getEnquiry() {
-        return enquiry;
-    }
+	public void setActivitySeqNo(Integer activitySeqNo) {
+		this.activitySeqNo = activitySeqNo;
+	}
 
-    public void setEnquiry(EnquiryModel enquiry) {
-        this.enquiry = enquiry;
-    }
+	public String getActivityRefId() {
+		return activityRefId;
+	}
 
-    public String getActivityType() {
-        return activityType;
-    }
+	public void setActivityRefId(String activityRefId) {
+		this.activityRefId = activityRefId;
+	}
 
-    public void setActivityType(String activityType) {
-        this.activityType = activityType;
-    }
+	public EnquiryModel getEnquiry() {
+		return enquiry;
+	}
 
-    public String getActivitySubject() {
-        return activitySubject;
-    }
+	public void setEnquiry(EnquiryModel enquiry) {
+		this.enquiry = enquiry;
+	}
 
-    public void setActivitySubject(String activitySubject) {
-        this.activitySubject = activitySubject;
-    }
+	public String getActivityType() {
+		return activityType;
+	}
 
-    public String getActivityDescription() {
-        return activityDescription;
-    }
+	public void setActivityType(String activityType) {
+		this.activityType = activityType;
+	}
 
-    public void setActivityDescription(String activityDescription) {
-        this.activityDescription = activityDescription;
-    }
+	public String getActivitySubject() {
+		return activitySubject;
+	}
 
-    public Date getActivityDate() {
-        return activityDate;
-    }
+	public void setActivitySubject(String activitySubject) {
+		this.activitySubject = activitySubject;
+	}
 
-    public void setActivityDate(Date activityDate) {
-        this.activityDate = activityDate;
-    }
+	public String getActivityDescription() {
+		return activityDescription;
+	}
 
-    public Integer getActivityDuration() {
-        return activityDuration;
-    }
+	public void setActivityDescription(String activityDescription) {
+		this.activityDescription = activityDescription;
+	}
 
-    public void setActivityDuration(Integer activityDuration) {
-        this.activityDuration = activityDuration;
-    }
+	public Date getActivityStartDate() {
+		return activityStartDate;
+	}
 
-    public String getActivityStatus() {
-        return activityStatus;
-    }
+	public void setActivityStartDate(Date activityStartDate) {
+		this.activityStartDate = activityStartDate;
+	}
 
-    public void setActivityStatus(String activityStatus) {
-        this.activityStatus = activityStatus;
-    }
+	public Date getActivityEndDate() {
+		return activityEndDate;
+	}
 
-    public String getLoggedTime() {
-        return loggedTime;
-    }
+	public void setActivityEndDate(Date activityEndDate) {
+		this.activityEndDate = activityEndDate;
+	}
 
-    public void setLoggedTime(String loggedTime) {
-        this.loggedTime = loggedTime;
-    }
+	public Time getActivityStartTime() {
+		return activityStartTime;
+	}
 
-    public String getOriginalEstimate() {
-        return originalEstimate;
-    }
+	public void setActivityStartTime(Time activityStartTime) {
+		this.activityStartTime = activityStartTime;
+	}
 
-    public void setOriginalEstimate(String originalEstimate) {
-        this.originalEstimate = originalEstimate;
-    }
+	public Time getActivityEndTime() {
+		return activityEndTime;
+	}
 
-    public Integer getProbabilityPercentage() {
-        return probabilityPercentage;
-    }
+	public void setActivityEndTime(Time activityEndTime) {
+		this.activityEndTime = activityEndTime;
+	}
 
-    public void setProbabilityPercentage(Integer probabilityPercentage) {
-        this.probabilityPercentage = probabilityPercentage;
-    }
+	public String getActivityStatus() {
+		return activityStatus;
+	}
 
-    public String getActivityCreatedBy() {
-        return activityCreatedBy;
-    }
+	public void setActivityStatus(String activityStatus) {
+		this.activityStatus = activityStatus;
+	}
 
-    public void setActivityCreatedBy(String activityCreatedBy) {
-        this.activityCreatedBy = activityCreatedBy;
-    }
+	public Integer getProbabilityPercentage() {
+		return probabilityPercentage;
+	}
 
-    public Date getActivityCreatedDate() {
-        return activityCreatedDate;
-    }
+	public void setProbabilityPercentage(Integer probabilityPercentage) {
+		this.probabilityPercentage = probabilityPercentage;
+	}
 
-    public void setActivityCreatedDate(Date activityCreatedDate) {
-        this.activityCreatedDate = activityCreatedDate;
-    }
+	public String getActivityCreatedBy() {
+		return activityCreatedBy;
+	}
 
-    public String getActivityUpdatedBy() {
-        return activityUpdatedBy;
-    }
+	public void setActivityCreatedBy(String activityCreatedBy) {
+		this.activityCreatedBy = activityCreatedBy;
+	}
 
-    public void setActivityUpdatedBy(String activityUpdatedBy) {
-        this.activityUpdatedBy = activityUpdatedBy;
-    }
+	public Date getActivityCreatedDate() {
+		return activityCreatedDate;
+	}
 
-    public Date getActivityUpdatedDate() {
-        return activityUpdatedDate;
-    }
+	public void setActivityCreatedDate(Date activityCreatedDate) {
+		this.activityCreatedDate = activityCreatedDate;
+	}
 
-    public void setActivityUpdatedDate(Date activityUpdatedDate) {
-        this.activityUpdatedDate = activityUpdatedDate;
-    }
+	public String getActivityUpdatedBy() {
+		return activityUpdatedBy;
+	}
 
-    public String getDurationBetweenLeadAndLogTime() {
-        return durationBetweenLeadAndLogTime;
-    }
+	public void setActivityUpdatedBy(String activityUpdatedBy) {
+		this.activityUpdatedBy = activityUpdatedBy;
+	}
 
-    public void setDurationBetweenLeadAndLogTime(String durationBetweenLeadAndLogTime) {
-        this.durationBetweenLeadAndLogTime = durationBetweenLeadAndLogTime;
-    }
+	public Date getActivityUpdatedDate() {
+		return activityUpdatedDate;
+	}
 
-    public Time getEventStartTime() {
-        return eventStartTime;
-    }
+	public void setActivityUpdatedDate(Date activityUpdatedDate) {
+		this.activityUpdatedDate = activityUpdatedDate;
+	}
 
-    public void setEventStartTime(Time eventStartTime) {
-        this.eventStartTime = eventStartTime;
-    }
+	public String getActivityPriority() {
+		return activityPriority;
+	}
 
-    public Time getEventEndTime() {
-        return eventEndTime;
-    }
+	public void setActivityPriority(String activityPriority) {
+		this.activityPriority = activityPriority;
+	}
 
-    public void setEventEndTime(Time eventEndTime) {
-        this.eventEndTime = eventEndTime;
-    }
+	public boolean isReminderSent() {
+		return reminderSent;
+	}
 
-    public Date getEventEndDate() {
-        return eventEndDate;
-    }
+	public void setReminderSent(boolean reminderSent) {
+		this.reminderSent = reminderSent;
+	}
 
-    public void setEventEndDate(Date eventEndDate) {
-        this.eventEndDate = eventEndDate;
-    }
+    
+    
 
-    public String getEventLocation() {
-        return eventLocation;
-    }
-
-    public void setEventLocation(String eventLocation) {
-        this.eventLocation = eventLocation;
-    }
-
-    public String getEventOrganizer() {
-        return eventOrganizer;
-    }
-
-    public void setEventOrganizer(String eventOrganizer) {
-        this.eventOrganizer = eventOrganizer;
-    }
-
-    public String getEventPriority() {
-        return eventPriority;
-    }
-
-    public void setEventPriority(String eventPriority) {
-        this.eventPriority = eventPriority;
-    }
-
-    public boolean isReminderSent() {
-        return reminderSent;
-    }
-
-    public void setReminderSent(boolean reminderSent) {
-        this.reminderSent = reminderSent;
-    }
 }

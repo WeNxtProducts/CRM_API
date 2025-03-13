@@ -130,7 +130,6 @@ public class EnquiryService {
 
     public ResponseEntity<Map<String, Object>> getEnquiryById(Integer id) {
         return enquiryRepository.findById(id)
-        		//System.out.println("ID: " + id);
                 .map(enquiry -> ResponseEntity.ok(buildResponse("success", "Record fetched successfully", enquiry)))
                 .orElseGet(() -> ResponseEntity.status(404).body(buildResponse("error", "Enquiry not found", null)));
     }

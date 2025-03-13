@@ -1,4 +1,3 @@
-// ActivityService.java
 package com.wenxt.crm.service;
 
 import com.wenxt.crm.model.ActivityModel;
@@ -10,12 +9,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
+
 @Service
 public class ActivityService {
 
@@ -33,7 +30,6 @@ public class ActivityService {
         validateActivity(activity);
         setEnquiryDetails(activity);
         setDefaultCreatedDate(activity);
-        calculateDuration(activity);
         ActivityModel savedActivity = activityRepository.save(activity);
         sendActivityReminder(savedActivity, "ACTIVITY_CREATED");
         return savedActivity;
@@ -47,7 +43,6 @@ public class ActivityService {
         validateActivityTypeConsistency(existingActivity, activity);
         updateActivityFields(existingActivity, activity);
         validateActivity(existingActivity);
-        calculateDuration(existingActivity);
         ActivityModel updatedActivity = activityRepository.save(existingActivity);
         sendActivityReminder(updatedActivity, "ACTIVITY_UPDATED");
         return updatedActivity;
@@ -66,11 +61,8 @@ public class ActivityService {
             if (activity.getEnquiry() == null || activity.getEnquiry().getEnqSeqNo() == null) {
                 throw new IllegalArgumentException("Enquiry is required for appointments");
             }
-            if (activity.getActivityDuration() == null) {
-                activity.setActivityDuration(30); // Default duration for appointments
-            }
         } else if ("EVENT".equals(activity.getActivityType())) {
-            if (activity.getEventStartTime() == null || activity.getEventEndTime() == null) {
+            if (activity.getActivityStartTime() == null || activity.getActivityEndTime() == null) {
                 throw new IllegalArgumentException("Event start/end time is required");
             }
             if (activity.getEnquiry() != null) {
@@ -99,26 +91,9 @@ public class ActivityService {
         }
     }
 
-    private void calculateDuration(ActivityModel activity) {
-        if (activity.getEnquiry() != null && activity.getEnquiry().getEnqCreatedDate() != null) {
-            String duration = calculateDurationBetweenDates(
-                    activity.getEnquiry().getEnqCreatedDate(),
-                    activity.getActivityCreatedDate()
-            );
-            activity.setDurationBetweenLeadAndLogTime(duration);
-        }
-    }
-
-    private String calculateDurationBetweenDates(Date start, Date end) {
-        LocalDateTime startDate = start.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-        LocalDateTime endDate = end.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
-        Duration duration = Duration.between(startDate, endDate);
-        return String.format("%dd %dh %dm", duration.toDays(), duration.toHoursPart(), duration.toMinutesPart());
-    }
-
     private void sendActivityReminder(ActivityModel activity, String logType) {
-        Date reminderDate = activity.getActivityDate() != null 
-                ? new Date(activity.getActivityDate().getTime() - (4 * 3600 * 1000)) 
+        Date reminderDate = activity.getActivityStartDate() != null 
+                ? new Date(activity.getActivityStartDate().getTime() - (4 * 3600 * 1000)) 
                 : null;
         remainderUtility.sendRemainderAndLog(
                 logType,
@@ -128,15 +103,12 @@ public class ActivityService {
     }
 
     public Optional<ActivityModel> getActivityById(Integer id) {
-        return activityRepository.findById(id).map(activity -> {
-            calculateDuration(activity);
-            return activity;
-        });
+        return activityRepository.findById(id);
     }
 
     public List<ActivityModel> getAllActivities(String activityType) {
         if (activityType != null && !activityType.isEmpty()) {
-            return activityRepository.findByActivityTypeOrderByActivityDateAsc(activityType);
+            return activityRepository.findByActivityTypeOrderByActivityStartDateAsc(activityType);
         }
         return activityRepository.findAll();
     }
@@ -156,19 +128,14 @@ public class ActivityService {
     private void updateActivityFields(ActivityModel existing, ActivityModel updated) {
         existing.setActivitySubject(updated.getActivitySubject() != null ? updated.getActivitySubject() : existing.getActivitySubject());
         existing.setActivityDescription(updated.getActivityDescription() != null ? updated.getActivityDescription() : existing.getActivityDescription());
-        existing.setActivityDate(updated.getActivityDate() != null ? updated.getActivityDate() : existing.getActivityDate());
+        existing.setActivityStartDate(updated.getActivityStartDate() != null ? updated.getActivityStartDate() : existing.getActivityStartDate());
         existing.setActivityStatus(updated.getActivityStatus() != null ? updated.getActivityStatus() : existing.getActivityStatus());
         existing.setProbabilityPercentage(updated.getProbabilityPercentage() != null ? updated.getProbabilityPercentage() : existing.getProbabilityPercentage());
-        existing.setOriginalEstimate(updated.getOriginalEstimate() != null ? updated.getOriginalEstimate() : existing.getOriginalEstimate());
         existing.setActivityUpdatedDate(new Date());
 
         if ("EVENT".equals(existing.getActivityType())) {
-            existing.setEventStartTime(updated.getEventStartTime() != null ? updated.getEventStartTime() : existing.getEventStartTime());
-            existing.setEventEndTime(updated.getEventEndTime() != null ? updated.getEventEndTime() : existing.getEventEndTime());
-            existing.setEventLocation(updated.getEventLocation() != null ? updated.getEventLocation() : existing.getEventLocation());
-            existing.setEventOrganizer(updated.getEventOrganizer() != null ? updated.getEventOrganizer() : existing.getEventOrganizer());
-        } else {
-            existing.setActivityDuration(updated.getActivityDuration() != null ? updated.getActivityDuration() : existing.getActivityDuration());
+            existing.setActivityStartTime(updated.getActivityStartTime() != null ? updated.getActivityStartTime() : existing.getActivityStartTime());
+            existing.setActivityEndTime(updated.getActivityEndTime() != null ? updated.getActivityEndTime() : existing.getActivityEndTime());
         }
     }
 }

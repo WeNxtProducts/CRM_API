@@ -91,7 +91,7 @@ public class LeadModel {
     private Date leadUpdatedDate; 
 
     @Lob
-    @Column(name = "LEAD_DESCRIPTION")
+    @Column(name = "lead_desciption")
     private String leadDescription;
 
     @Lob

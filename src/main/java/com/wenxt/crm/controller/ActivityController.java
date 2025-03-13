@@ -1,4 +1,3 @@
-// ActivityController.java
 package com.wenxt.crm.controller;
 
 import com.wenxt.crm.model.ActivityModel;

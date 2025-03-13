@@ -56,24 +56,22 @@ public class SalesLeadDashboardService {
         }
     }
 
-//    // GET method for activities (replaces separate events/appointments methods)
-//    public ResponseEntity<Map<String, Object>> getActivities(String activityType) {
-//        try {
-//            List<ActivityModel> activities;
-//            
-//            if (activityType != null && !activityType.isEmpty()) {
-//                // Filter by type if specified
-//                activities = activityRepository.findByActivityTypeOrderByActivityDateAsc(activityType);
-//            } else {
-//                // Get all activities regardless of type
-//                activities = activityRepository.findAll();
-//            }
-//            
-//            return ResponseEntity.ok(createResponse("success", "Activities fetched successfully", activities));
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(createResponse("error", "Failed to fetch activities: " + e.getMessage(), null));
-//        }
-//    }
+    // GET method for activities (filtered by type)
+    public ResponseEntity<Map<String, Object>> getActivities(String activityType) {
+        try {
+            List<ActivityModel> activities;
+            if (activityType != null && !activityType.isEmpty()) {
+                // Filter by type if specified
+                activities = activityRepository.findByActivityTypeOrderByActivityStartDateAsc(activityType);
+            } else {
+                // Get all activities regardless of type
+                activities = activityRepository.findAll();
+            }
+            return ResponseEntity.ok(createResponse("success", "Activities fetched successfully", activities));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(createResponse("error", "Failed to fetch activities: " + e.getMessage(), null));
+        }
+    }
 
     // GET method for activity logs
     public ResponseEntity<Map<String, Object>> getActivityLog() {
@@ -95,33 +93,57 @@ public class SalesLeadDashboardService {
         }
     }
 
-    // GET method for calendar data
+    // GET method for calendar data (filtered by date range and type)
     public ResponseEntity<Map<String, Object>> getCalendarData(Date startDate, Date endDate) {
         try {
-            // Get all activities in date range
-            List<ActivityModel> activities = activityRepository.findByActivityDateBetween(startDate, endDate);
-            
+            // Debugging: Log the input date range
+            // System.out.println("Fetching calendar data for date range: " + startDate + " to " + endDate);
+
+            // Fetch all activities within the date range
+            List<ActivityModel> activities = activityRepository.findByActivityStartDateBetween(startDate, endDate);
+
+            // Debugging: Log the fetched activities
+            // System.out.println("Fetched Activities: " + activities);
+
             // Filter activities by type
             List<ActivityModel> events = new ArrayList<>();
             List<ActivityModel> appointments = new ArrayList<>();
-            
+
             for (ActivityModel activity : activities) {
-                if ("EVENT".equals(activity.getActivityType())) {
+                // Debugging: Log each activity's type
+                // System.out.println("Processing Activity: " + activity.getActivitySubject() + ", Type: " + activity.getActivityType());
+
+                if ("EVENT".equalsIgnoreCase(activity.getActivityType())) {
                     events.add(activity);
-                } else if ("APPOINTMENT".equals(activity.getActivityType())) {
+                } else if ("APPOINTMENT".equalsIgnoreCase(activity.getActivityType())) {
                     appointments.add(activity);
                 }
             }
-            
+
+            // Debugging: Log the filtered events and appointments
+            // System.out.println("Filtered Events: " + events);
+            // System.out.println("Filtered Appointments: " + appointments);
+
+            // Fetch tasks within the date range
             List<TaskModel> tasks = taskRepository.findByTaskDueDateBetween(startDate, endDate);
 
+            // Debugging: Log the fetched tasks
+            // System.out.println("Fetched Tasks: " + tasks);
+
+            // Prepare the response
             Map<String, Object> calendarData = new HashMap<>();
             calendarData.put("events", events);
             calendarData.put("appointments", appointments);
             calendarData.put("tasks", tasks);
 
+            // Debugging: Log the final calendar data
+            // System.out.println("Calendar Data: " + calendarData);
+
             return ResponseEntity.ok(createResponse("success", "Calendar data fetched successfully", calendarData));
         } catch (Exception e) {
+            // Debugging: Log the exception
+            // System.err.println("Error fetching calendar data: " + e.getMessage());
+            e.printStackTrace();
             return ResponseEntity.badRequest().body(createResponse("error", "Failed to fetch calendar data: " + e.getMessage(), null));
         }
     }
@@ -139,8 +161,8 @@ public class SalesLeadDashboardService {
                 graphDataList.add(new GraphDataModel(monthName, leads.intValue()));
             }
 
-            String[] allMonths = {"January", "February", "March", "April", "May", "June", 
-                                  "July", "August", "September", "October", "November", "December"};
+            String[] allMonths = {"January", "February", "March", "April", "May", "June",
+                    "July", "August", "September", "October", "November", "December"};
             for (String month : allMonths) {
                 boolean monthExists = graphDataList.stream().anyMatch(data -> data.getMonth().equals(month));
                 if (!monthExists) {
@@ -155,44 +177,6 @@ public class SalesLeadDashboardService {
             return ResponseEntity.badRequest().body(createResponse("error", "Failed to fetch sales graph data: " + e.getMessage(), null));
         }
     }
-
-//    // POST method to create a new activity (replaces createEvent and createAppointment)
-//    public ResponseEntity<Map<String, Object>> createActivity(ActivityModel activity) {
-//        try {
-//            // Validate activityType
-//            if (!"APPOINTMENT".equals(activity.getActivityType()) && !"EVENT".equals(activity.getActivityType())) {
-//                throw new IllegalArgumentException("Invalid activityType. Must be 'APPOINTMENT' or 'EVENT'.");
-//            }
-//
-//            // Event-specific validations
-//            if ("EVENT".equals(activity.getActivityType())) {
-//                if (activity.getEventStartTime() == null || activity.getEventEndTime() == null) {
-//                    throw new IllegalArgumentException("Event start/end time is required for events.");
-//                }
-//            }
-//
-//            // Appointment-specific validations
-//            if ("APPOINTMENT".equals(activity.getActivityType())) {
-//                if (activity.getActivityDuration() == null) {
-//                    // Set default duration if none provided
-//                    activity.setActivityDuration(30);
-//                }
-//            }
-//
-//            ActivityModel savedActivity = activityRepository.save(activity);
-//            String logMessage = "Activity created: " + activity.getActivitySubject();
-//            remainderUtility.sendRemainderAndLog(
-//                "ACTIVITY_CREATED",
-//                logMessage,
-//                activity.getActivityDate() != null ? 
-//                    new Date(activity.getActivityDate().getTime() - (4 * 3600 * 1000)) : null
-//            );
-//
-//            return ResponseEntity.ok(createResponse("success", "Activity created successfully", savedActivity));
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(createResponse("error", "Failed to create activity: " + e.getMessage(), null));
-//        }
-//    }
 
     // POST method to create a new activity log
     public ResponseEntity<Map<String, Object>> createActivityLog(ActivityLogModel activityLog) {
@@ -224,61 +208,6 @@ public class SalesLeadDashboardService {
         }
     }
 
-//    // PUT method to update an activity
-//    public ResponseEntity<Map<String, Object>> updateActivity(Long id, ActivityModel activity) {
-//        try {
-//            ActivityModel existingActivity = activityRepository.findById(id.intValue())
-//                .orElseThrow(() -> new RuntimeException("Activity not found"));
-//
-//            // Cannot change the type of an existing activity
-//            if (!existingActivity.getActivityType().equals(activity.getActivityType())) {
-//                throw new IllegalArgumentException("Cannot change the activity type of an existing activity.");
-//            }
-//
-//            // Update common fields
-//            existingActivity.setActivitySubject(activity.getActivitySubject());
-//            existingActivity.setActivityDescription(activity.getActivityDescription());
-//            existingActivity.setActivityDate(activity.getActivityDate());
-//            existingActivity.setActivityStatus(activity.getActivityStatus());
-//            existingActivity.setProbabilityPercentage(activity.getProbabilityPercentage());
-//            existingActivity.setLoggedTime(activity.getLoggedTime());
-//            existingActivity.setOriginalEstimate(activity.getOriginalEstimate());
-//            
-//            // Update type-specific fields
-//            if ("EVENT".equals(existingActivity.getActivityType())) {
-//                existingActivity.setEventStartTime(activity.getEventStartTime());
-//                existingActivity.setEventEndTime(activity.getEventEndTime());
-//                existingActivity.setEventEndDate(activity.getEventEndDate());
-//                existingActivity.setEventLocation(activity.getEventLocation());
-//                existingActivity.setEventOrganizer(activity.getEventOrganizer());
-//                existingActivity.setEventPriority(activity.getEventPriority());
-//                existingActivity.setReminderSent(activity.isReminderSent());
-//            } else if ("APPOINTMENT".equals(existingActivity.getActivityType())) {
-//                existingActivity.setActivityDuration(activity.getActivityDuration());
-//            }
-//
-//            // Set updated info
-//            existingActivity.setActivityUpdatedDate(new Date());
-//            if (activity.getActivityUpdatedBy() != null) {
-//                existingActivity.setActivityUpdatedBy(activity.getActivityUpdatedBy());
-//            }
-//
-//            ActivityModel updatedActivity = activityRepository.save(existingActivity);
-//            
-//            // Send a reminder and log the update
-//            remainderUtility.sendRemainderAndLog(
-//                "ACTIVITY_UPDATED",
-//                "Activity updated: " + activity.getActivitySubject(),
-//                activity.getActivityDate() != null ? 
-//                    new Date(activity.getActivityDate().getTime() - (4 * 3600 * 1000)) : null
-//            );
-//
-//            return ResponseEntity.ok(createResponse("success", "Activity updated successfully", updatedActivity));
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(createResponse("error", "Failed to update activity: " + e.getMessage(), null));
-//        }
-//    }
-
     // PUT method to update an activity log
     public ResponseEntity<Map<String, Object>> updateActivityLog(Long id, ActivityLogModel activityLog) {
         try {
@@ -305,16 +234,6 @@ public class SalesLeadDashboardService {
         }
     }
 
-//    // DELETE method to delete an activity
-//    public ResponseEntity<Map<String, Object>> deleteActivity(Long id) {
-//        try {
-//            activityRepository.deleteById(id.intValue());
-//            return ResponseEntity.ok(createResponse("success", "Activity deleted successfully", null));
-//        } catch (Exception e) {
-//            return ResponseEntity.badRequest().body(createResponse("error", "Failed to delete activity: " + e.getMessage(), null));
-//        }
-//    }
-
     // DELETE method to delete an activity log
     public ResponseEntity<Map<String, Object>> deleteActivityLog(Long id) {
         try {
@@ -337,15 +256,15 @@ public class SalesLeadDashboardService {
 
     // Helper method to get month name from month number
     private String getMonthName(int monthNumber) {
-        String[] monthNames = {"January", "February", "March", "April", "May", "June", 
-                               "July", "August", "September", "October", "November", "December"};
+        String[] monthNames = {"January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"};
         return monthNames[monthNumber - 1];
     }
 
     // Helper method to get month index from month name
     private int getMonthIndex(String month) {
-        String[] months = {"January", "February", "March", "April", "May", "June", 
-                           "July", "August", "September", "October", "November", "December"};
+        String[] months = {"January", "February", "March", "April", "May", "June",
+                "July", "August", "September", "October", "November", "December"};
         for (int i = 0; i < months.length; i++) {
             if (months[i].equalsIgnoreCase(month)) {
                 return i;
